@@ -7,8 +7,9 @@ import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.util.Log;
 
-import com.eflagcomm.pmms.camera.utils.DisplayUtils;
-import com.eflagcomm.pmms.camera.utils.ShaderUtils;
+
+import com.example.video.camera.utils.DisplayUtils;
+import com.example.video.camera.utils.ShaderUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

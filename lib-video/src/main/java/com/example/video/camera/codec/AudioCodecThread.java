@@ -7,7 +7,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.eflagcomm.pmms.camera.MediaCodecConstant;
+
+import com.example.video.camera.MediaCodecConstant;
 
 import java.nio.ByteBuffer;
 

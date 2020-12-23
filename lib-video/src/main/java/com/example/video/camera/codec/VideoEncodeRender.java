@@ -4,8 +4,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.opengl.GLES20;
 
-import com.eflagcomm.pmms.camera.surface.EglSurfaceView;
-import com.eflagcomm.pmms.camera.utils.ShaderUtils;
+import com.example.video.camera.surface.EglSurfaceView;
+import com.example.video.camera.utils.ShaderUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

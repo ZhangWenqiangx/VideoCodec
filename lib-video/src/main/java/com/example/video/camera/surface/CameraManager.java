@@ -7,7 +7,8 @@ import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.util.Log;
 
-import com.eflagcomm.pmms.camera.utils.DisplayUtils;
+
+import com.example.video.camera.utils.DisplayUtils;
 
 import java.io.IOException;
 import java.util.List;

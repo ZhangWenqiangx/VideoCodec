@@ -1,4 +1,4 @@
-package com.example.video.camera;
+package com.example.video.camera.utils;
 
 import android.util.Log;
 

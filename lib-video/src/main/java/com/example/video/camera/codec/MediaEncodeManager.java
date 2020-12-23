@@ -9,8 +9,8 @@ import android.os.Build;
 import android.util.Log;
 import android.view.Surface;
 
-import com.eflagcomm.pmms.camera.MediaCodecConstant;
-import com.eflagcomm.pmms.camera.surface.EglSurfaceView;
+import com.example.video.camera.MediaCodecConstant;
+import com.example.video.camera.surface.EglSurfaceView;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

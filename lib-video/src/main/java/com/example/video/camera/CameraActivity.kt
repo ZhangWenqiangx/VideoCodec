@@ -1,24 +1,28 @@
-package com.eflagcomm.pmms.camera
+package com.example.video.camera
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.media.MediaMuxer
 import android.opengl.GLSurfaceView
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
 import android.view.MotionEvent
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
-import com.eflagcomm.pmms.base.R
-import com.eflagcomm.pmms.camera.codec.MediaEncodeManager
-import com.eflagcomm.pmms.camera.codec.MediaMuxerChangeListener
-import com.eflagcomm.pmms.camera.codec.VideoEncodeRender
-import com.eflagcomm.pmms.camera.record.AudioCapture
-import com.eflagcomm.pmms.camera.record.AudioCapture.AudioCaptureListener
-import com.eflagcomm.pmms.camera.surface.CameraSurfaceView
-import com.eflagcomm.pmms.camera.utils.ByteUtils
-import com.eflagcomm.pmms.camera.utils.DisplayUtils
-import com.eflagcomm.pmms.camera.utils.FileUtils
-import com.eflagcomm.pmms.camerax.utils.getOutputDirectory
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.example.video.R
+import com.example.video.camera.codec.MediaEncodeManager
+import com.example.video.camera.codec.MediaMuxerChangeListener
+import com.example.video.camera.codec.VideoEncodeRender
+import com.example.video.camera.record.AudioCapture
+import com.example.video.camera.surface.CameraSurfaceView
+import com.example.video.camera.utils.ByteUtils
+import com.example.video.camera.utils.DisplayUtils
+import com.example.video.camera.utils.FileUtils
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -41,31 +45,49 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
     //开启 -- 关闭录制
     private var isStartRecord = false
     private val calcDecibel = Handler()
-    private lateinit var outputDirectory: File
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        getPermission()
+
         init()
+
         DisplayUtils.adjustBrightness(0.6f, this)
     }
 
+    private fun getPermission() {
+        if (Build.VERSION.SDK_INT > 22) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.CAMERA
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(
+                        Manifest.permission.CAMERA,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.RECORD_AUDIO
+                    ),
+                    0
+                )
+            }
+        }
+    }
+
     private fun init() {
-        setContentView(R.layout.activity_camera2)
+        setContentView(R.layout.activity_camera)
         ivRecord = findViewById(R.id.iv_record)
         cameraSurfaceView = findViewById(R.id.camera_surface_view)
         audioCapture = AudioCapture()
 
-        outputDirectory = getOutputDirectory(this)
-
         ivRecord!!.setOnClickListener {
             if (!isStartRecord) {
                 initMediaCodec()
-                ivRecord!!.setImageResource(R.drawable.camera_icon)
                 mediaEncodeManager!!.startEncode()
                 audioCapture!!.start()
                 isStartRecord = true
             } else {
-                ivRecord!!.setImageResource(R.drawable.camera_stop_icon)
                 isStartRecord = false
                 mediaEncodeManager!!.stopEncode()
                 audioCapture!!.stop()
@@ -90,7 +112,7 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
         val audioFormat = 16
         //预览
         val width = cameraSurfaceView!!.cameraPreviewHeight
-        val height = (cameraSurfaceView!!.cameraPreviewWidth * 0.6).toInt()
+        val height = cameraSurfaceView!!.cameraPreviewWidth
         mediaEncodeManager = MediaEncodeManager(
             VideoEncodeRender(
                 this,
@@ -113,7 +135,7 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
     private fun setPcmRecordListener() {
         if (audioCapture!!.captureListener == null) {
             audioCapture!!.captureListener =
-                AudioCaptureListener setCaptureListener@{ audioSource: ByteArray?, audioReadSize: Int ->
+                AudioCapture.AudioCaptureListener setCaptureListener@{ audioSource: ByteArray?, audioReadSize: Int ->
                     if (MediaCodecConstant.audioStop || MediaCodecConstant.videoStop) {
                         return@setCaptureListener
                     }
