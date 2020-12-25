@@ -1,16 +1,21 @@
 package com.example.video.camera
 
 import android.Manifest
+import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.AssetManager
+import android.content.res.Resources
+import android.graphics.*
 import android.media.MediaMuxer
 import android.opengl.GLSurfaceView
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.provider.MediaStore
 import android.util.Log
-import android.view.MotionEvent
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -23,14 +28,19 @@ import com.example.video.camera.surface.CameraSurfaceView
 import com.example.video.camera.utils.ByteUtils
 import com.example.video.camera.utils.DisplayUtils
 import com.example.video.camera.utils.FileUtils
-import java.io.File
+import com.example.video.camera.utils.findMaxLengthStr
+import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 
 /**
  * 录像功能入口 -- 录音+录视频+编解码+合成视频
  *
- * 需要扩展功能-> 水印
+ * 1.权限
+ * 2.拍照
+ * 3.压缩
+ * 4.点播--
+ * 5.水印--
  */
 class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
     private val TAG = "MainActivity.class"
@@ -49,8 +59,6 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         getPermission()
-
-        init()
 
         DisplayUtils.adjustBrightness(0.6f, this)
     }
@@ -71,9 +79,23 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
                     ),
                     0
                 )
+            } else {
+                init()
             }
         }
     }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 0) {
+            init()
+        }
+    }
+
 
     private fun init() {
         setContentView(R.layout.activity_camera)
@@ -83,11 +105,13 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
 
         ivRecord!!.setOnClickListener {
             if (!isStartRecord) {
+                Toast.makeText(this,"start",Toast.LENGTH_SHORT).show()
                 initMediaCodec()
                 mediaEncodeManager!!.startEncode()
                 audioCapture!!.start()
                 isStartRecord = true
             } else {
+                Toast.makeText(this,"end",Toast.LENGTH_SHORT).show()
                 isStartRecord = false
                 mediaEncodeManager!!.stopEncode()
                 audioCapture!!.stop()
@@ -116,11 +140,11 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
         mediaEncodeManager = MediaEncodeManager(
             VideoEncodeRender(
                 this,
-                cameraSurfaceView!!.textureId,
-                cameraSurfaceView!!.type,
-                cameraSurfaceView!!.color
+                textureId = cameraSurfaceView!!.textureId,
+                textBitmap = drawText2Bitmap(assets, resources)
             )
         )
+
         mediaEncodeManager!!.initMediaCodec(
             filePath, mediaFormat, audioType, sampleRate,
             channelCount, audioFormat, videoType, width, height
@@ -161,7 +185,40 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
         Log.d(TAG, "视频录制时长 --- $time")
     }
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        return true
+    private fun drawText2Bitmap(
+        assetManager: AssetManager,
+        resources: Resources
+    ): Bitmap? {
+        return try {
+            val arrayOf = arrayOf("拍 照 人：系统管理员", "拍照时间：2020-12-24 11：12：15", "经 纬 度：东经 116.489732 北纬 40.01824")
+
+            val scale = resources.displayMetrics.density
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+            paint.color = Color.WHITE
+            paint.textSize = 3 * scale
+            paint.style = Paint.Style.FILL
+            paint.typeface = Typeface.createFromAsset(assetManager, "JetBrainsMono.ttf")
+            paint.setShadowLayer(1f, 0f, 1f, Color.DKGRAY)
+
+            val maxLengthStr = arrayOf.findMaxLengthStr()
+            val bmpWidth: Float = paint.measureText(maxLengthStr!![0], 0, maxLengthStr[0].length)
+            val bmpHeight =
+                ((paint.fontMetrics.bottom - paint.fontMetrics.top) * arrayOf.size).toInt()
+            val bitmap = Bitmap.createBitmap(bmpWidth.toInt(), bmpHeight, Bitmap.Config.ARGB_8888)
+
+            val canvas = Canvas(bitmap)
+            canvas.drawColor(Color.RED)
+
+            val rowHeight = (bmpHeight / arrayOf.size).toFloat()
+            var y = rowHeight
+            arrayOf.forEach {
+                canvas.drawText(it, 0f, y, paint)
+                y += rowHeight
+            }
+            Log.d("99788","bitmap "+"h->${bitmap.height} w->${bitmap.width} rowHeight->{$rowHeight}")
+            bitmap
+        } catch (e: Exception) {
+            null
+        }
     }
 }

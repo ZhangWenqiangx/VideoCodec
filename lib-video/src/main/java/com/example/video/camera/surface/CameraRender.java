@@ -40,7 +40,7 @@ public class CameraRender implements EglSurfaceView.Render {
     private final int COORDS_PER_VERTEX = 3;
 
     //每一次取的总的点 大小
-    private int vertexStride = COORDS_PER_VERTEX * 4; // 4 bytes per vertex
+    private int vertexStride = COORDS_PER_VERTEX * 4;
 
     //位置
     private FloatBuffer vertexBuffer;
@@ -53,7 +53,6 @@ public class CameraRender implements EglSurfaceView.Render {
     private int afPosition;
     //纹理  默认第0个位置 可以不获取
     private int texture;
-
 
     //vbo id
     private int vboId;
@@ -208,7 +207,7 @@ public class CameraRender implements EglSurfaceView.Render {
      * 初始化水印坐标，顶点坐标数组中下标为0-11的为顶点坐标，下标12以后为水印坐标
      */
     private void initWater() {
-        bitmap = ShaderUtils.createTextImage("this is water", 35, "#ffffff",
+        bitmap = ShaderUtils.createTextImage("1", 35, "#ffffff",
                 "#00000000", 0);
 
         //计算宽高比
@@ -252,7 +251,7 @@ public class CameraRender implements EglSurfaceView.Render {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
 
-        ByteBuffer bitmapBuffer = ByteBuffer.allocate(bitmap.getHeight() * bitmap.getWidth() * 4);//RGBA
+        ByteBuffer bitmapBuffer = ByteBuffer.allocate(bitmap.getHeight() * bitmap.getWidth() * 4);
         bitmap.copyPixelsToBuffer(bitmapBuffer);
         //将bitmapBuffer位置移动到初始位置
         bitmapBuffer.flip();

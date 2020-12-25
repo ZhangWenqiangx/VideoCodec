@@ -135,4 +135,41 @@ public class ShaderUtils {
         canvas.drawText(text, padding, -top + padding, paint);
         return bm;
     }
+
+    /**
+     * 创建水印图片
+     *
+     * @param text      文本
+     * @param textSize  文字大小
+     * @param textColor 颜色
+     * @param bgColor   背景色
+     * @param padding   间距
+     * @return Bitmap
+     */
+    public static Bitmap createTextImage2(String text, int textSize, String textColor, String bgColor, int padding) {
+
+        String str = "next string------------------132123123123213213";
+        String str2 = "next string-------132";
+
+        Paint paint = new Paint();
+        paint.setColor(Color.parseColor(textColor));
+        paint.setTextSize(50);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setAntiAlias(true);
+
+        float width = paint.measureText(str, 0, str.length());
+
+        float top = paint.getFontMetrics().top;
+        float bottom = paint.getFontMetrics().bottom;
+
+        Bitmap bm = Bitmap.createBitmap((int) (width + padding), (int) ((bottom - top) + padding * 2) * 3, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bm);
+
+        canvas.drawColor(Color.parseColor(bgColor));
+        float v = -top + padding;
+        canvas.drawText(text, padding, v, paint);
+        canvas.drawText(str, padding, v + (-top + padding), paint);
+        canvas.drawText(str2, padding, v + ((-top + padding) * 2), paint);
+        return bm;
+    }
 }
