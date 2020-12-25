@@ -13,5 +13,6 @@
 
     <application>
         <activity android:name=".camera.CameraActivity" />
+        <activity android:name=".camera.videoplay.VideoPlayActivity"/>
     </application>
 </manifest>
