@@ -25,10 +25,7 @@ import com.example.video.camera.codec.MediaMuxerChangeListener
 import com.example.video.camera.codec.VideoEncodeRender
 import com.example.video.camera.record.AudioCapture
 import com.example.video.camera.surface.CameraSurfaceView
-import com.example.video.camera.utils.ByteUtils
-import com.example.video.camera.utils.DisplayUtils
-import com.example.video.camera.utils.FileUtils
-import com.example.video.camera.utils.findMaxLengthStr
+import com.example.video.camera.utils.*
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -96,10 +93,9 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
         }
     }
 
-
     private fun init() {
         setContentView(R.layout.activity_camera)
-        ivRecord = findViewById(R.id.iv_record)
+        ivRecord = findViewById(R.id.camera_ok)
         cameraSurfaceView = findViewById(R.id.camera_surface_view)
         audioCapture = AudioCapture()
 
@@ -144,7 +140,6 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
                 textBitmap = drawText2Bitmap(assets, resources)
             )
         )
-
         mediaEncodeManager!!.initMediaCodec(
             filePath, mediaFormat, audioType, sampleRate,
             channelCount, audioFormat, videoType, width, height
@@ -195,7 +190,7 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
             val scale = resources.displayMetrics.density
             val paint = Paint(Paint.ANTI_ALIAS_FLAG)
             paint.color = Color.WHITE
-            paint.textSize = 3 * scale
+            paint.textSize = 5 * scale
             paint.style = Paint.Style.FILL
             paint.typeface = Typeface.createFromAsset(assetManager, "JetBrainsMono.ttf")
             paint.setShadowLayer(1f, 0f, 1f, Color.DKGRAY)
@@ -204,8 +199,8 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
             val bmpWidth: Float = paint.measureText(maxLengthStr!![0], 0, maxLengthStr[0].length)
             val bmpHeight =
                 ((paint.fontMetrics.bottom - paint.fontMetrics.top) * arrayOf.size).toInt()
-            val bitmap = Bitmap.createBitmap(bmpWidth.toInt(), bmpHeight, Bitmap.Config.ARGB_8888)
 
+            val bitmap = Bitmap.createBitmap(bmpWidth.toInt(), bmpHeight, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
             canvas.drawColor(Color.RED)
 

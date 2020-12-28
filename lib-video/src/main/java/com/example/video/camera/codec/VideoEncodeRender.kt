@@ -129,26 +129,40 @@ class VideoEncodeRender(
         vertexData[14] = -0.75f * margin
         vertexData[15] = margin
 
-        vertexData[16] = -1f
-        vertexData[17] = -1f
+        val r: Float = 1.0f * textBitmap!!.width / textBitmap.height
+        val w = r * 0.1f
+        vertexData[16] = -0.9f
+        vertexData[17] = -0.9f
 
-        val x = String.format("%.3f", (textBitmap!!.width.toFloat() / dm.widthPixels) / 2).toFloat()
-        val finalx = if (x > 0.2f) {
-            x
-        } else {
-            x - 0.2f
-        }
+        vertexData[18] = w - 0.3f
+        vertexData[19] = -0.9f
 
-        vertexData[18] = finalx    //右下 x 宽
-        vertexData[19] = -1f
+        vertexData[20] = -0.9f
+        vertexData[21] = -0.8f
 
-        val y = String.format("%.2f", (1 - (textBitmap.height.toFloat() / dm.heightPixels * 10)))
-            .toFloat()
-        vertexData[20] = -1f
-        vertexData[21] = -1f * y
+        vertexData[22] = w - 0.3f
+        vertexData[23] = -0.8f
 
-        vertexData[22] = finalx
-        vertexData[23] = -1f * y
+//        vertexData[16] = -1f
+//        vertexData[17] = -1f
+//
+//        val x = String.format("%.3f", (textBitmap!!.width.toFloat() / dm.widthPixels) / 2).toFloat()
+//        val finalx = if (x > 0.2f) {
+//            x
+//        } else {
+//            x - 0.2f
+//        }
+//
+//        vertexData[18] = finalx    //右下 x 宽
+//        vertexData[19] = -1f
+//
+//        val y = String.format("%.2f", (1 - (textBitmap.height.toFloat() / dm.heightPixels * 10)))
+//            .toFloat()
+//        vertexData[20] = -1f
+//        vertexData[21] = -1f * y
+//
+//        vertexData[22] = finalx
+//        vertexData[23] = -1f * y
     }
 
     override fun onSurfaceCreated() {

@@ -7,7 +7,6 @@ import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.util.Log;
 
-
 import com.example.video.camera.utils.DisplayUtils;
 
 import java.io.IOException;
@@ -34,7 +33,7 @@ public class CameraManager {
     public CameraManager(Context context) {
         this.context = context;
         this.screenWidth = DisplayUtils.getScreenWidth(context);
-        this.screenHeight = DisplayUtils.getScreenHeight(context);
+        this.screenHeight = DisplayUtils.getScreenHeight(context) / 3 * 2;
     }
 
     public void startCamera(SurfaceTexture surfaceTexture, int cameraId) {
