@@ -1,6 +1,7 @@
 package com.example.video.camera
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.AssetManager
 import android.content.res.Resources
@@ -26,8 +27,10 @@ import com.example.video.camera.utils.ByteUtils
 import com.example.video.camera.utils.DisplayUtils
 import com.example.video.camera.utils.FileUtils
 import com.example.video.camera.utils.findMaxLengthStr
+import com.example.video.camera.videoplay.VideoPlayActivity
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
 /**
  * 录像功能入口 -- 录音+录视频+编解码+合成视频
@@ -51,6 +54,9 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
     //开启 -- 关闭录制
     private var isStartRecord = false
     private val calcDecibel = Handler()
+
+    private lateinit var mFilePath: String
+    private var fileList = ArrayList<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,7 +107,7 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
         ivRecord!!.setOnClickListener {
             if (!isStartRecord) {
                 Toast.makeText(this, "start", Toast.LENGTH_SHORT).show()
-                initMediaCodec()
+                mFilePath= initMediaCodec()
                 mediaEncodeManager!!.startEncode()
                 audioCapture!!.start()
                 isStartRecord = true
@@ -110,11 +116,17 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
                 isStartRecord = false
                 mediaEncodeManager!!.stopEncode()
                 audioCapture!!.stop()
+                intent = Intent(this,VideoPlayActivity::class.java)
+                Log.d(TAG, "init: ${mFilePath}")
+                fileList.add(mFilePath)
+                intent.putExtra("111",fileList)
+                startActivity(intent)
+
             }
         }
     }
 
-    private fun initMediaCodec() {
+    private fun initMediaCodec() :String{
         val currentDate =
             SimpleDateFormat("yyyyMMdd_HHmm", Locale.CHINA)
                 .format(Date())
@@ -147,6 +159,8 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
             this, cameraSurfaceView!!.eglContext,
             GLSurfaceView.RENDERMODE_CONTINUOUSLY
         )
+
+        return filePath
     }
 
     //录音线程数据回调
