@@ -4,14 +4,13 @@
     android:id="@+id/camera_ui_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000"
     tools:ignore="ContentDescription,RtlHardcoded">
 
     <com.example.video.camera.surface.CameraSurfaceView
         android:layout_centerInParent="true"
         android:id="@+id/camera_surface_view"
         android:layout_width="match_parent"
-        android:layout_height="560dp" />
+        android:layout_height="match_parent" />
 
     <ImageButton
         android:id="@+id/back_button"

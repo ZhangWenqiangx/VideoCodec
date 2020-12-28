@@ -1,8 +1,6 @@
 package com.example.video.camera
 
 import android.Manifest
-import android.content.ContentValues
-import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.AssetManager
 import android.content.res.Resources
@@ -12,7 +10,6 @@ import android.opengl.GLSurfaceView
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.ImageView
 import android.widget.Toast
@@ -25,8 +22,10 @@ import com.example.video.camera.codec.MediaMuxerChangeListener
 import com.example.video.camera.codec.VideoEncodeRender
 import com.example.video.camera.record.AudioCapture
 import com.example.video.camera.surface.CameraSurfaceView
-import com.example.video.camera.utils.*
-import java.io.*
+import com.example.video.camera.utils.ByteUtils
+import com.example.video.camera.utils.DisplayUtils
+import com.example.video.camera.utils.FileUtils
+import com.example.video.camera.utils.findMaxLengthStr
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -101,13 +100,13 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
 
         ivRecord!!.setOnClickListener {
             if (!isStartRecord) {
-                Toast.makeText(this,"start",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "start", Toast.LENGTH_SHORT).show()
                 initMediaCodec()
                 mediaEncodeManager!!.startEncode()
                 audioCapture!!.start()
                 isStartRecord = true
             } else {
-                Toast.makeText(this,"end",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "end", Toast.LENGTH_SHORT).show()
                 isStartRecord = false
                 mediaEncodeManager!!.stopEncode()
                 audioCapture!!.stop()
@@ -185,7 +184,11 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
         resources: Resources
     ): Bitmap? {
         return try {
-            val arrayOf = arrayOf("拍 照 人：系统管理员", "拍照时间：2020-12-24 11：12：15", "经 纬 度：东经 116.489732 北纬 40.01824")
+            val arrayOf = arrayOf(
+                "拍 照 人：系统管理员",
+                "拍照时间：2020-12-24 11：12：15",
+                "经 纬 度：东经 116.489732 北纬 40.01824"
+            )
 
             val scale = resources.displayMetrics.density
             val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -202,15 +205,16 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
 
             val bitmap = Bitmap.createBitmap(bmpWidth.toInt(), bmpHeight, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            canvas.drawColor(Color.RED)
-
             val rowHeight = (bmpHeight / arrayOf.size).toFloat()
             var y = rowHeight
             arrayOf.forEach {
                 canvas.drawText(it, 0f, y, paint)
                 y += rowHeight
             }
-            Log.d("99788","bitmap "+"h->${bitmap.height} w->${bitmap.width} rowHeight->{$rowHeight}")
+            Log.d(
+                "99788",
+                "bitmap " + "h->${bitmap.height} w->${bitmap.width} rowHeight->{$rowHeight}"
+            )
             bitmap
         } catch (e: Exception) {
             null

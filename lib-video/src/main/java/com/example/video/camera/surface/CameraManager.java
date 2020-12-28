@@ -33,7 +33,7 @@ public class CameraManager {
     public CameraManager(Context context) {
         this.context = context;
         this.screenWidth = DisplayUtils.getScreenWidth(context);
-        this.screenHeight = DisplayUtils.getScreenHeight(context) / 3 * 2;
+        this.screenHeight = DisplayUtils.getScreenHeight(context);
     }
 
     public void startCamera(SurfaceTexture surfaceTexture, int cameraId) {
