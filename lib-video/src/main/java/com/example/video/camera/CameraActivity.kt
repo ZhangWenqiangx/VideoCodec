@@ -1,14 +1,12 @@
 package com.example.video.camera
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.AssetManager
 import android.content.res.Resources
 import android.graphics.*
-import android.media.MediaMuxer
-import android.opengl.GLSurfaceView
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
@@ -40,7 +38,16 @@ import kotlin.collections.ArrayList
  * 3.压缩
  * 4.点播--
  * 5.水印--
+ * 6.录制完成返回
  */
+private const val PERMISSIONS_REQUEST_CODE = 10
+
+private val PERMISSIONS_REQUIRED = arrayOf(
+    Manifest.permission.CAMERA,
+    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+    Manifest.permission.RECORD_AUDIO
+)
+
 class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
     private val TAG = CameraActivity::class.java.simpleName
 
@@ -60,47 +67,33 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        getPermission()
-
-        DisplayUtils.adjustBrightness(0.6f, this)
-    }
-
-    private fun getPermission() {
-        if (Build.VERSION.SDK_INT > 22) {
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.CAMERA
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(
-                        Manifest.permission.CAMERA,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.RECORD_AUDIO
-                    ),
-                    0
-                )
-            } else {
-                init()
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 0) {
+        if (!hasPermissions(this)) {
+            ActivityCompat.requestPermissions(this, PERMISSIONS_REQUIRED, PERMISSIONS_REQUEST_CODE)
+        } else {
             init()
         }
     }
 
+    /**
+     * 请求权限回调
+     */
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSIONS_REQUEST_CODE) {
+            if (PackageManager.PERMISSION_GRANTED == grantResults.firstOrNull()) {
+                init()
+            } else {
+                Toast.makeText(this, "Permission request denied", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun init() {
+        DisplayUtils.adjustBrightness(0.6f, this)
         setContentView(R.layout.activity_camera)
-        ivRecord = findViewById(R.id.camera_ok)
+        ivRecord = findViewById(R.id.capture)
         cameraSurfaceView = findViewById(R.id.camera_surface_view)
         audioCapture = AudioCapture()
 
@@ -116,53 +109,40 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
                 isStartRecord = false
                 mediaEncodeManager!!.stopEncode()
                 audioCapture!!.stop()
+
                 intent = Intent(this, VideoPlayActivity::class.java)
                 Log.d(TAG, "init: ${mFilePath}")
                 fileList.add(mFilePath)
                 intent.putExtra("111", fileList)
                 startActivity(intent)
-
             }
         }
     }
 
     private fun initMediaCodec(): String {
-        val currentDate =
-            SimpleDateFormat("yyyyMMdd_HHmm", Locale.CHINA)
-                .format(Date())
-        val fileName = "/VID_$currentDate.mp4"
-        val filePath = FileUtils.getDiskCachePath(this) + fileName
-        val mediaFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4
-        val audioType = "audio/mp4a-latm"
-        val videoType = "video/avc"
-        val sampleRate = 44100
-        //单声道 channelCount=1 , 双声道  channelCount=2
-        val channelCount = 2
-        //AudioCapture.class类中采集音频采用的位宽：AudioFormat.ENCODING_PCM_16BIT ，此处应传入16bit，
-        // 用作计算pcm一帧的时间戳
-        val audioFormat = 16
-        //预览
-        val width = cameraSurfaceView!!.cameraPreviewHeight
-        val height = cameraSurfaceView!!.cameraPreviewWidth
+        val filePath = FileUtils.getDiskCachePath(this) + "/VID_${SimpleDateFormat(
+            "yyyyMMdd_HHmm",
+            Locale.CHINA
+        )
+            .format(Date())}.mp4"
 
-        mediaEncodeManager = MediaEncodeManager(
-            VideoEncodeRender(
-                context = this,
-                textureId = cameraSurfaceView!!.textureId,
-                waterMarkArr = arrayOf(
-                    BitmapFactory.decodeResource(resources, R.drawable.ic_water_mark),
-                    drawText2Bitmap(assets, resources)
-                )
+        val videoEncodeRender = VideoEncodeRender(
+            context = this,
+            textureId = cameraSurfaceView!!.textureId,
+            waterMarkArr = arrayOf(
+                BitmapFactory.decodeResource(resources, R.drawable.ic_water_mark),
+                drawText2Bitmap(assets, resources)
             )
         )
-        mediaEncodeManager!!.initMediaCodec(
-            filePath, mediaFormat, audioType, sampleRate,
-            channelCount, audioFormat, videoType, width, height
-        )
-        mediaEncodeManager!!.initThread(
-            this, cameraSurfaceView!!.eglContext,
-            GLSurfaceView.RENDERMODE_CONTINUOUSLY
-        )
+
+        mediaEncodeManager = MediaEncodeManager.Builder()
+            .setVideoSavePath(filePath)
+            .cameraPreviewHeight(cameraSurfaceView!!.cameraPreviewWidth)
+            .cameraPreviewWidth(cameraSurfaceView!!.cameraPreviewHeight)
+            .setVideoEncodeRender(videoEncodeRender)
+            .setEGLContext(cameraSurfaceView!!.eglContext)
+            .setMdeiaMuxerChangeListener(this)
+            .build()
 
         return filePath
     }
@@ -195,6 +175,10 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
 
     override fun onMediaInfoListener(time: Int) {
         Log.d(TAG, "视频录制时长 --- $time")
+    }
+
+    fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
+        ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun drawText2Bitmap(
