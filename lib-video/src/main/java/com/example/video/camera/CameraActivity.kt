@@ -30,16 +30,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
 
-/**
- * 录像功能入口 -- 录音+录视频+编解码+合成视频
- *
- * 1.权限
- * 2.拍照
- * 3.压缩
- * 4.点播--
- * 5.水印--
- * 6.录制完成返回
- */
+
 private const val PERMISSIONS_REQUEST_CODE = 10
 
 private val PERMISSIONS_REQUIRED = arrayOf(
@@ -48,6 +39,9 @@ private val PERMISSIONS_REQUIRED = arrayOf(
     Manifest.permission.RECORD_AUDIO
 )
 
+/**
+ * 录像功能入口 -- 录音+录视频+编解码+合成视频
+ */
 class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
     private val TAG = CameraActivity::class.java.simpleName
 
@@ -109,12 +103,6 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
                 isStartRecord = false
                 mediaEncodeManager!!.stopEncode()
                 audioCapture!!.stop()
-
-                intent = Intent(this, VideoPlayActivity::class.java)
-                Log.d(TAG, "init: ${mFilePath}")
-                fileList.add(mFilePath)
-                intent.putExtra("111", fileList)
-                startActivity(intent)
             }
         }
     }
@@ -180,6 +168,12 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
             }
             MUXER_STOP -> {
                 Log.d(TAG, "onMediaMuxerChangeListener --- " + "视频录制结束")
+
+                intent = Intent(this, VideoPlayActivity::class.java)
+                Log.d(TAG, "init: ${mFilePath}")
+                fileList.add(mFilePath)
+                intent.putExtra("111", fileList)
+                startActivity(intent)
             }
             else -> {
 
