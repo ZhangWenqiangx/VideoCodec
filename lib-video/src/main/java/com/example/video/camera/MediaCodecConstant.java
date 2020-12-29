@@ -21,12 +21,4 @@ public class MediaCodecConstant {
     public static boolean audioStop;
     //标记MediaCodec -- videoCodec 对象是否退出释放
     public static boolean videoStop;
-
-    //标记手势不缩放
-    public static final int NOT_SCALE = 0;
-    //标记手势缩放变大
-    public static final int LARGE_SCALE = 1;
-    //标记手势缩放变小
-    public static final int LITTLE_SCALE = 2;
-
 }

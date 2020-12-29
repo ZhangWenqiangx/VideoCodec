@@ -2,40 +2,34 @@ package com.example.video.camera.codec
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.opengl.GLES20
 import android.opengl.GLES32
 import android.opengl.GLUtils
+import android.util.ArrayMap
 import android.util.DisplayMetrics
-import com.example.video.R
 import com.example.video.camera.surface.EglSurfaceView.Render
+import com.example.video.camera.utils.GlUtils
 import com.example.video.camera.utils.ShaderUtils
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 
-
 /**
  * @author : zhang.wenqiang
  * @date : 2020/12/24
- * description :录制视频Render
- * 处理三个纹理id     视频源  图片  文字
+ * description :录制视频渲染类
+ * 处理两个纹理id     视频源  水印
  */
 class VideoEncodeRender(
     private val context: Context,
     /**
-     * 视频源id
+     * 视频源texture id
      */
     private val textureId: Int,
     /**
-     * 滤镜相关暂不用
+     * 水印bitmap集合
      */
-    private val type: Int = 0,
-    private val color: FloatArray = floatArrayOf(0f, 0f, 0f),
-    /**
-     * 文字图片水印bitmap
-     */
-    private val textBitmap: Bitmap?
+    private val waterMarkArr: Array<Bitmap?>
 ) : Render {
     /**
      * 顶点坐标
@@ -68,25 +62,17 @@ class VideoEncodeRender(
         1f, 0f
     )
 
-    private val vertexBuffer: FloatBuffer
-    private val textureBuffer: FloatBuffer
     private var program = 0
     private var avPosition = 0
     private var afPosition = 0
     private var vboId = 0
+    private val vertexBuffer: FloatBuffer
+    private val textureBuffer: FloatBuffer
 
     /**
-     * 文字水印渲染id
+     * 存储位图与生成其对应id的map
      */
-    private var waterTextureId = 0
-
-    /**
-     * 图片水印id
-     */
-    private var bitmapTextureId = 0
-
-    private var changeType = 0
-    private var changeColor = 0
+    private var waterMarkMap: ArrayMap<Bitmap, Int> = ArrayMap()
 
     init {
         adjustWatermarkPosition()
@@ -115,7 +101,7 @@ class VideoEncodeRender(
         //相较于屏幕顶部和左侧的margin
         val margin = 0.95f
         //屏幕宽高比
-        val screenScale = String.format("%.1f", 1.0f * dm.widthPixels / dm.heightPixels).toFloat()
+        val screenScale = String.format("%.2f", 1.0f * dm.widthPixels / dm.heightPixels).toFloat()
         //左下
         vertexData[8] = -1f * margin
         vertexData[9] = screenScale * 1.75f * margin
@@ -129,40 +115,21 @@ class VideoEncodeRender(
         vertexData[14] = -0.75f * margin
         vertexData[15] = margin
 
-        val r: Float = 1.0f * textBitmap!!.width / textBitmap.height
-        val w = r * 0.1f
-        vertexData[16] = -0.9f
-        vertexData[17] = -0.9f
+        waterMarkArr[1]?.let {
+            val r: Float = 1.0f * it.width / it.height
+            val w = r * 0.1f
+            vertexData[16] = -0.9f
+            vertexData[17] = -0.9f
 
-        vertexData[18] = w - 0.3f
-        vertexData[19] = -0.9f
+            vertexData[18] = w - 0.3f
+            vertexData[19] = -0.9f
 
-        vertexData[20] = -0.9f
-        vertexData[21] = -0.8f
+            vertexData[20] = -0.9f
+            vertexData[21] = -0.8f
 
-        vertexData[22] = w - 0.3f
-        vertexData[23] = -0.8f
-
-//        vertexData[16] = -1f
-//        vertexData[17] = -1f
-//
-//        val x = String.format("%.3f", (textBitmap!!.width.toFloat() / dm.widthPixels) / 2).toFloat()
-//        val finalx = if (x > 0.2f) {
-//            x
-//        } else {
-//            x - 0.2f
-//        }
-//
-//        vertexData[18] = finalx    //右下 x 宽
-//        vertexData[19] = -1f
-//
-//        val y = String.format("%.2f", (1 - (textBitmap.height.toFloat() / dm.heightPixels * 10)))
-//            .toFloat()
-//        vertexData[20] = -1f
-//        vertexData[21] = -1f * y
-//
-//        vertexData[22] = finalx
-//        vertexData[23] = -1f * y
+            vertexData[22] = w - 0.3f
+            vertexData[23] = -0.8f
+        }
     }
 
     override fun onSurfaceCreated() {
@@ -182,11 +149,6 @@ class VideoEncodeRender(
             avPosition = GLES32.glGetAttribLocation(program, "av_Position")
             //获取纹理坐标字段
             afPosition = GLES32.glGetAttribLocation(program, "af_Position")
-            //滤镜传入类型
-            changeType = GLES32.glGetUniformLocation(program, "vChangeType")
-            //对应滤镜需要的颜色
-            changeColor = GLES32.glGetUniformLocation(program, "vChangeColor")
-
             //创建vbo
             createVBO()
 
@@ -206,10 +168,6 @@ class VideoEncodeRender(
         GLES32.glClearColor(1f, 1f, 1f, 1f)
         //使用程序
         GLES32.glUseProgram(program)
-        //设置滤镜
-        GLES32.glUniform1i(changeType, type)
-        GLES32.glUniform3fv(changeColor, 1, color, 0)
-
         //绑定vbo
         GLES32.glBindBuffer(GLES32.GL_ARRAY_BUFFER, vboId)
         //绘制视频源  流程为->配置、绑定id、释放
@@ -222,15 +180,16 @@ class VideoEncodeRender(
         GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, textureId)
         GLES32.glDrawArrays(GLES32.GL_TRIANGLE_STRIP, 0, 4)
 
-        //绘制图片水印
-        GLES32.glVertexAttribPointer(avPosition, 2, GLES32.GL_FLOAT, false, 8, 32)
-        GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, bitmapTextureId)
-        GLES32.glDrawArrays(GLES32.GL_TRIANGLE_STRIP, 0, 4)
-
-        //绘制文字水印
-        GLES32.glVertexAttribPointer(avPosition, 2, GLES32.GL_FLOAT, false, 8, 64)
-        GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, waterTextureId)
-        GLES32.glDrawArrays(GLES32.GL_TRIANGLE_STRIP, 0, 4)
+        var offset = 32
+        //绘制水印
+        waterMarkArr.forEach {
+            it?.let {
+                GLES32.glVertexAttribPointer(avPosition, 2, GLES32.GL_FLOAT, false, 8, offset)
+                GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, waterMarkMap[it]!!)
+                GLES32.glDrawArrays(GLES32.GL_TRIANGLE_STRIP, 0, 4)
+                offset += 32
+            }
+        }
 
         GLES20.glDisableVertexAttribArray(avPosition)
         GLES20.glDisableVertexAttribArray(afPosition)
@@ -268,59 +227,11 @@ class VideoEncodeRender(
     }
 
     /**
-     * 创建文字和图片的水印纹理id
+     * 创建水印的纹理id
      */
     private fun createWaterTextureId() {
-        val textureIds = IntArray(1)
-        //创建纹理
-        GLES32.glGenTextures(1, textureIds, 0)
-        waterTextureId = textureIds[0]
-        //绑定纹理
-        GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, waterTextureId)
-        //环绕（超出纹理坐标范围）  （s==x t==y GL_REPEAT 重复）
-        GLES32.glTexParameteri(GLES32.GL_TEXTURE_2D, GLES32.GL_TEXTURE_WRAP_S, GLES32.GL_REPEAT)
-        GLES32.glTexParameteri(GLES32.GL_TEXTURE_2D, GLES32.GL_TEXTURE_WRAP_T, GLES32.GL_REPEAT)
-        //过滤（纹理像素映射到坐标点）  （缩小、放大：GL_LINEAR线性）
-        GLES32.glTexParameteri(GLES32.GL_TEXTURE_2D, GLES32.GL_TEXTURE_MIN_FILTER, GLES32.GL_LINEAR)
-        GLES32.glTexParameteri(GLES32.GL_TEXTURE_2D, GLES32.GL_TEXTURE_MAG_FILTER, GLES32.GL_LINEAR)
-
-        val bitmapBuffer = ByteBuffer.allocate(textBitmap!!.height * textBitmap.width * 4)
-        textBitmap.copyPixelsToBuffer(bitmapBuffer)
-        //将bitmapBuffer位置移动到初始位置
-        bitmapBuffer.flip()
-        //设置内存大小绑定内存地址
-        GLES32.glTexImage2D(
-            GLES32.GL_TEXTURE_2D, 0, GLES32.GL_RGBA, textBitmap.width, textBitmap.height,
-            0, GLES32.GL_RGBA, GLES32.GL_UNSIGNED_BYTE, bitmapBuffer
-        )
-        //解绑纹理 指的是离开对 纹理的配置，进入下一个状态
-        GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, 0)
-
-        //生成图片水印id
-        bitmapTextureId = createImageTexture(context, R.drawable.ic_water_mark)
-    }
-
-    /**
-     * 生成图片纹理id
-     */
-    fun createImageTexture(context: Context, rawID: Int): Int {
-        //生产一个纹理
-        val textureIds = IntArray(1)
-        GLES32.glGenTextures(1, textureIds, 0)
-        //绑定为 2D纹理
-        GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, textureIds[0])
-        //设置环绕模式
-        GLES32.glTexParameteri(GLES32.GL_TEXTURE_2D, GLES32.GL_TEXTURE_WRAP_S, GLES32.GL_REPEAT)
-        GLES32.glTexParameteri(GLES32.GL_TEXTURE_2D, GLES32.GL_TEXTURE_WRAP_T, GLES32.GL_REPEAT)
-        //设置过滤模式
-        GLES32.glTexParameteri(GLES32.GL_TEXTURE_2D, GLES32.GL_TEXTURE_MIN_FILTER, GLES32.GL_LINEAR)
-        GLES32.glTexParameteri(GLES32.GL_TEXTURE_2D, GLES32.GL_TEXTURE_MAG_FILTER, GLES32.GL_LINEAR)
-        val bitmap = BitmapFactory.decodeResource(context.resources, rawID)
-        //绑定 bitmap到 textureIds[0] 这个2D纹理上
-        GLUtils.texImage2D(GLES32.GL_TEXTURE_2D, 0, bitmap, 0)
-        bitmap.recycle()
-        //退出 纹理的设置，进入下一环节
-        GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, 0)
-        return textureIds[0]
+        waterMarkArr.forEach {
+            waterMarkMap[it] = GlUtils.createTextureId(it)
+        }
     }
 }

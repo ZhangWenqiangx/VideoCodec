@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
  */
 public class AudioCodecThread extends Thread {
 
-    private static final String TAG = "AudioCodecThread.class";
+    private static final String TAG = AudioCodecThread.class.getSimpleName();
 
     private MediaCodec audioCodec;
     private MediaCodec.BufferInfo bufferInfo;
