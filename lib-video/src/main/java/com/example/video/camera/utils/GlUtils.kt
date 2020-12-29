@@ -51,8 +51,6 @@ object GlUtils {
                 GLES32.GL_TEXTURE_2D, 0, GLES32.GL_RGBA, bitmap.width, bitmap.height,
                 0, GLES32.GL_RGBA, GLES32.GL_UNSIGNED_BYTE, bitmapBuffer
             )
-
-            bitmap.recycle()
             //退出 纹理的设置，进入下一环节
             GLES32.glBindTexture(GLES32.GL_TEXTURE_2D, 0)
             result = textureIds[0]

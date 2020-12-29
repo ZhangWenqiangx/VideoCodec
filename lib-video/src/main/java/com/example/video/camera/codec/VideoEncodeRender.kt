@@ -4,9 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.opengl.GLES20
 import android.opengl.GLES32
-import android.opengl.GLUtils
 import android.util.ArrayMap
-import android.util.DisplayMetrics
 import com.example.video.camera.surface.EglSurfaceView.Render
 import com.example.video.camera.utils.GlUtils
 import com.example.video.camera.utils.ShaderUtils
@@ -97,23 +95,22 @@ class VideoEncodeRender(
      * 8-15位为icon的位置 例：8,9 位为一个点的横纵坐标 共4个点 需要8位表示 /  16-23 文字位置
      */
     private fun adjustWatermarkPosition() {
-        val dm: DisplayMetrics = context.resources.displayMetrics
-        //相较于屏幕顶部和左侧的margin
-        val margin = 0.95f
-        //屏幕宽高比
-        val screenScale = String.format("%.2f", 1.0f * dm.widthPixels / dm.heightPixels).toFloat()
-        //左下
-        vertexData[8] = -1f * margin
-        vertexData[9] = screenScale * 1.75f * margin
-        //右下
-        vertexData[10] = -0.75f * margin
-        vertexData[11] = screenScale * 1.75f * margin
-        //左上
-        vertexData[12] = -1f * margin
-        vertexData[13] = margin
-        //右上
-        vertexData[14] = -0.75f * margin
-        vertexData[15] = margin
+        waterMarkArr[0]?.let {
+            val r: Float = 1.0f * it.width / it.height
+            val w = r * 0.1f
+            //左下
+            vertexData[8] = -0.9f
+            vertexData[9] = 0.8f
+            //右下
+            vertexData[10] = w - 0.8f
+            vertexData[11] = 0.8f
+            //左上
+            vertexData[12] = -0.9f
+            vertexData[13] = 0.9f
+            //右上
+            vertexData[14] = w - 0.8f
+            vertexData[15] = 0.9f
+        }
 
         waterMarkArr[1]?.let {
             val r: Float = 1.0f * it.width / it.height

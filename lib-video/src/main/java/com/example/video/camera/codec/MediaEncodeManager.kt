@@ -36,7 +36,7 @@ class MediaEncodeManager(builder: Builder) {
     /**
      * N标识码率低、中、高，类似可设置成1，3，5，码率越高 视频越大，越清晰
      */
-    private var codeRate = 2
+    private var codeRate = 1
 
     /**
      * AudioCapture.class类中采集音频采用的位宽：AudioFormat.ENCODING_PCM_16BIT
