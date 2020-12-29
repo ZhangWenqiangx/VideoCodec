@@ -1,3 +1,5 @@
+@file:Suppress("INACCESSIBLE_TYPE")
+
 package com.example.video.camera
 
 import android.Manifest
@@ -11,6 +13,7 @@ import android.opengl.GLSurfaceView
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.provider.Settings
 import android.util.Log
 import android.widget.ImageView
 import android.widget.Toast
@@ -21,6 +24,7 @@ import com.example.video.R
 import com.example.video.camera.codec.MediaEncodeManager
 import com.example.video.camera.codec.MediaMuxerChangeListener
 import com.example.video.camera.codec.VideoEncodeRender
+import com.example.video.camera.compress.VideoCompress
 import com.example.video.camera.record.AudioCapture
 import com.example.video.camera.surface.CameraSurfaceView
 import com.example.video.camera.utils.ByteUtils
@@ -28,6 +32,8 @@ import com.example.video.camera.utils.DisplayUtils
 import com.example.video.camera.utils.FileUtils
 import com.example.video.camera.utils.findMaxLengthStr
 import com.example.video.camera.videoplay.VideoPlayActivity
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -116,22 +122,15 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
                 isStartRecord = false
                 mediaEncodeManager!!.stopEncode()
                 audioCapture!!.stop()
-                intent = Intent(this,VideoPlayActivity::class.java)
-                Log.d(TAG, "init: ${mFilePath}")
-                fileList.add(mFilePath)
-                intent.putExtra("111",fileList)
-                startActivity(intent)
+//               player(true)
 
             }
         }
     }
 
     private fun initMediaCodec() :String{
-        val currentDate =
-            SimpleDateFormat("yyyyMMdd_HHmm", Locale.CHINA)
-                .format(Date())
-        val fileName = "/VID_$currentDate.mp4"
-        val filePath = FileUtils.getDiskCachePath(this) + fileName
+
+        val filePath = FileUtils.getDiskCachePath(this) + getFileName()
         val mediaFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4
         val audioType = "audio/mp4a-latm"
         val videoType = "video/avc"
@@ -162,6 +161,26 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
 
         return filePath
     }
+
+    private fun getFileName(): String{
+        val currentDate =
+            SimpleDateFormat("yyyyMMdd_HHmm", Locale.CHINA)
+                .format(Date())
+        val fileName = "/VID_$currentDate.mp4"
+
+        return fileName
+    }
+
+    private fun getCompressFileName(): String {
+        val currentDate =
+            SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CHINA)
+                .format(Date())
+        val fileName = "/VID_$currentDate.mp4"
+
+        return fileName
+    }
+
+
 
     //录音线程数据回调
     private fun setPcmRecordListener() {
@@ -232,6 +251,38 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
             bitmap
         } catch (e: Exception) {
             null
+        }
+    }
+
+    private fun player(isCompress :Boolean) {
+        if (isCompress){
+
+            val compressFilePath = FileUtils.getDiskCachePath(this)+getCompressFileName()
+
+            VideoCompress.compressVideoLow(mFilePath,compressFilePath,object : VideoCompress.CompressListener{
+                override fun onSuccess() {
+
+                    intent = Intent(this@CameraActivity,VideoPlayActivity::class.java)
+                    Log.d(TAG, "init: ${compressFilePath}")
+                    fileList.add(compressFilePath)
+                    intent.putExtra("111",fileList)
+                    startActivity(intent)
+                }
+
+                override fun onFail() {
+                    Log.d(TAG, "onFail: 压缩失败")
+                }
+
+                override fun onProgress(percent: Float) {
+                    Log.d(TAG, "onProgress: ${percent}")
+                }
+
+                override fun onStart() {
+                    Log.d(TAG, "onStart: 开始压缩")
+                }
+
+            })
+
         }
     }
 }
