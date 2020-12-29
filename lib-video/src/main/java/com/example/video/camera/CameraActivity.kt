@@ -4,9 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.res.AssetManager
-import android.content.res.Resources
-import android.graphics.*
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
@@ -16,15 +14,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.video.R
+import com.example.video.camera.MediaCodecConstant.MUXER_START
+import com.example.video.camera.MediaCodecConstant.MUXER_STOP
 import com.example.video.camera.codec.MediaEncodeManager
 import com.example.video.camera.codec.MediaMuxerChangeListener
 import com.example.video.camera.codec.VideoEncodeRender
 import com.example.video.camera.record.AudioCapture
 import com.example.video.camera.surface.CameraSurfaceView
+import com.example.video.camera.utils.BitmapUtils
 import com.example.video.camera.utils.ByteUtils
 import com.example.video.camera.utils.DisplayUtils
 import com.example.video.camera.utils.FileUtils
-import com.example.video.camera.utils.findMaxLengthStr
 import com.example.video.camera.videoplay.VideoPlayActivity
 import java.text.SimpleDateFormat
 import java.util.*
@@ -131,7 +131,13 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
             textureId = cameraSurfaceView!!.textureId,
             waterMarkArr = arrayOf(
                 BitmapFactory.decodeResource(resources, R.drawable.ic_water_mark),
-                drawText2Bitmap(assets, resources)
+                BitmapUtils.drawText2Bitmap(
+                    assets, resources, arrayOf(
+                        "拍 照 人：系统管理员",
+                        "拍照时间：2020-12-24 11：12：15",
+                        "经 纬 度：东经 116.489732 北纬 40.01824"
+                    )
+                )
             )
         )
 
@@ -167,59 +173,26 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
     }
 
     override fun onMediaMuxerChangeListener(type: Int) {
-        if (type == MediaCodecConstant.MUXER_START) {
-            Log.d(TAG, "onMediaMuxerChangeListener --- " + "视频录制开始了")
-            setPcmRecordListener()
+        when (type) {
+            MUXER_START -> {
+                Log.d(TAG, "onMediaMuxerChangeListener --- " + "视频录制开始")
+                setPcmRecordListener()
+            }
+            MUXER_STOP -> {
+                Log.d(TAG, "onMediaMuxerChangeListener --- " + "视频录制结束")
+            }
+            else -> {
+
+            }
         }
     }
 
     override fun onMediaInfoListener(time: Int) {
         Log.d(TAG, "视频录制时长 --- $time")
+
     }
 
     fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun drawText2Bitmap(
-        assetManager: AssetManager,
-        resources: Resources
-    ): Bitmap? {
-        return try {
-            val arrayOf = arrayOf(
-                "拍 照 人：系统管理员",
-                "拍照时间：2020-12-24 11：12：15",
-                "经 纬 度：东经 116.489732 北纬 40.01824"
-            )
-
-            val scale = resources.displayMetrics.density
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-            paint.color = Color.WHITE
-            paint.textSize = 5 * scale
-            paint.style = Paint.Style.FILL
-            paint.typeface = Typeface.createFromAsset(assetManager, "JetBrainsMono.ttf")
-            paint.setShadowLayer(1f, 0f, 1f, Color.DKGRAY)
-
-            val maxLengthStr = arrayOf.findMaxLengthStr()
-            val bmpWidth: Float = paint.measureText(maxLengthStr!![0], 0, maxLengthStr[0].length)
-            val bmpHeight =
-                ((paint.fontMetrics.bottom - paint.fontMetrics.top) * arrayOf.size).toInt()
-
-            val bitmap = Bitmap.createBitmap(bmpWidth.toInt(), bmpHeight, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-            val rowHeight = (bmpHeight / arrayOf.size).toFloat()
-            var y = rowHeight
-            arrayOf.forEach {
-                canvas.drawText(it, 0f, y, paint)
-                y += rowHeight
-            }
-            Log.d(
-                "99788",
-                "bitmap " + "h->${bitmap.height} w->${bitmap.width} rowHeight->{$rowHeight}"
-            )
-            bitmap
-        } catch (e: Exception) {
-            null
-        }
     }
 }
