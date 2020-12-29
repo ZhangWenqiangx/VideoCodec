@@ -42,7 +42,7 @@ import kotlin.collections.ArrayList
  * 5.水印--
  */
 class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
-    private val TAG = "MainActivity.class"
+    private val TAG = CameraActivity::class.java.simpleName
 
     private var cameraSurfaceView: CameraSurfaceView? = null
     private var ivRecord: ImageView? = null
@@ -107,7 +107,7 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
         ivRecord!!.setOnClickListener {
             if (!isStartRecord) {
                 Toast.makeText(this, "start", Toast.LENGTH_SHORT).show()
-                mFilePath= initMediaCodec()
+                mFilePath = initMediaCodec()
                 mediaEncodeManager!!.startEncode()
                 audioCapture!!.start()
                 isStartRecord = true
@@ -116,17 +116,17 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
                 isStartRecord = false
                 mediaEncodeManager!!.stopEncode()
                 audioCapture!!.stop()
-                intent = Intent(this,VideoPlayActivity::class.java)
+                intent = Intent(this, VideoPlayActivity::class.java)
                 Log.d(TAG, "init: ${mFilePath}")
                 fileList.add(mFilePath)
-                intent.putExtra("111",fileList)
+                intent.putExtra("111", fileList)
                 startActivity(intent)
 
             }
         }
     }
 
-    private fun initMediaCodec() :String{
+    private fun initMediaCodec(): String {
         val currentDate =
             SimpleDateFormat("yyyyMMdd_HHmm", Locale.CHINA)
                 .format(Date())
@@ -144,11 +144,15 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
         //预览
         val width = cameraSurfaceView!!.cameraPreviewHeight
         val height = cameraSurfaceView!!.cameraPreviewWidth
+
         mediaEncodeManager = MediaEncodeManager(
             VideoEncodeRender(
-                this,
+                context = this,
                 textureId = cameraSurfaceView!!.textureId,
-                textBitmap = drawText2Bitmap(assets, resources)
+                waterMarkArr = arrayOf(
+                    BitmapFactory.decodeResource(resources, R.drawable.ic_water_mark),
+                    drawText2Bitmap(assets, resources)
+                )
             )
         )
         mediaEncodeManager!!.initMediaCodec(

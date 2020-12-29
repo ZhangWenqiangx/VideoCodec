@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.opengl.GLES20;
 
 
+import com.example.video.camera.utils.GlUtils;
 import com.example.video.camera.utils.ShaderUtils;
 
 import java.nio.ByteBuffer;
@@ -119,7 +120,7 @@ public class CameraRender implements EglSurfaceView.Render {
             createVBO();
 
             //创建水印纹理
-            createWaterTextureId();
+            waterTextureId = GlUtils.createTextureId(bitmap);
         }
     }
 
@@ -207,7 +208,7 @@ public class CameraRender implements EglSurfaceView.Render {
      * 初始化水印坐标，顶点坐标数组中下标为0-11的为顶点坐标，下标12以后为水印坐标
      */
     private void initWater() {
-        bitmap = ShaderUtils.createTextImage("1", 35, "#ffffff",
+        bitmap = ShaderUtils.createTextImage(" ", 35, "#ffffff",
                 "#00000000", 0);
 
         //计算宽高比
@@ -231,37 +232,6 @@ public class CameraRender implements EglSurfaceView.Render {
         vertexData[21] = w - 0.8f;
         vertexData[22] = -0.7f;
         vertexData[23] = 0;//右上
-    }
-
-    /**
-     * 创建水印纹理id
-     */
-    private void createWaterTextureId() {
-
-        int[] textureIds = new int[1];
-        //创建纹理
-        GLES20.glGenTextures(1, textureIds, 0);
-        waterTextureId = textureIds[0];
-        //绑定纹理
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, waterTextureId);
-        //环绕（超出纹理坐标范围）  （s==x t==y GL_REPEAT 重复）
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_REPEAT);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_REPEAT);
-        //过滤（纹理像素映射到坐标点）  （缩小、放大：GL_LINEAR线性）
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-
-        ByteBuffer bitmapBuffer = ByteBuffer.allocate(bitmap.getHeight() * bitmap.getWidth() * 4);
-        bitmap.copyPixelsToBuffer(bitmapBuffer);
-        //将bitmapBuffer位置移动到初始位置
-        bitmapBuffer.flip();
-
-        //设置内存大小绑定内存地址
-        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, bitmap.getWidth(), bitmap.getHeight(),
-                0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, bitmapBuffer);
-
-        //解绑纹理
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
     }
 
     /**
