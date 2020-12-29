@@ -100,15 +100,15 @@ class VideoEncodeRender(
             val w = r * 0.1f
             //左下
             vertexData[8] = -0.9f
-            vertexData[9] = 0.8f
+            vertexData[9] = 0.72f
             //右下
-            vertexData[10] = w - 0.8f
-            vertexData[11] = 0.8f
+            vertexData[10] = w - 0.7f
+            vertexData[11] = 0.72f
             //左上
             vertexData[12] = -0.9f
             vertexData[13] = 0.9f
             //右上
-            vertexData[14] = w - 0.8f
+            vertexData[14] = w - 0.7f
             vertexData[15] = 0.9f
         }
 
@@ -116,10 +116,10 @@ class VideoEncodeRender(
             val r: Float = 1.0f * it.width / it.height
             val w = r * 0.1f
             vertexData[16] = -0.9f
-            vertexData[17] = -0.9f
+            vertexData[17] = -0.95f
 
             vertexData[18] = w - 0.3f
-            vertexData[19] = -0.9f
+            vertexData[19] = -0.95f
 
             vertexData[20] = -0.9f
             vertexData[21] = -0.8f
