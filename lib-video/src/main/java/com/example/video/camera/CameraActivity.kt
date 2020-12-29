@@ -19,6 +19,7 @@ import com.example.video.camera.MediaCodecConstant.MUXER_STOP
 import com.example.video.camera.codec.MediaEncodeManager
 import com.example.video.camera.codec.MediaMuxerChangeListener
 import com.example.video.camera.codec.VideoEncodeRender
+import com.example.video.camera.compress.VideoCompress
 import com.example.video.camera.record.AudioCapture
 import com.example.video.camera.surface.CameraSurfaceView
 import com.example.video.camera.utils.BitmapUtils
@@ -169,11 +170,7 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
             MUXER_STOP -> {
                 Log.d(TAG, "onMediaMuxerChangeListener --- " + "视频录制结束")
 
-                intent = Intent(this, VideoPlayActivity::class.java)
-                Log.d(TAG, "init: ${mFilePath}")
-                fileList.add(mFilePath)
-                intent.putExtra("111", fileList)
-                startActivity(intent)
+                player(true)
             }
             else -> {
 
@@ -183,10 +180,48 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
 
     override fun onMediaInfoListener(time: Int) {
         Log.d(TAG, "视频录制时长 --- $time")
-
     }
 
     fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+    }
+
+
+    private fun getFilePath(): String {
+        val filePath = FileUtils.getDiskCachePath(this) + "/VID_${SimpleDateFormat(
+            "yyyyMMdd_HHmmss",
+            Locale.CHINA
+        )
+            .format(Date())}.mp4"
+
+        return filePath
+    }
+
+    @Suppress("INACCESSIBLE_TYPE")
+    private fun player(isCompress: Boolean) {
+        if (isCompress) {
+            VideoCompress.compressVideoLow(mFilePath,getFilePath(),object : VideoCompress.CompressListener{
+                override fun onSuccess() {
+                    intent = Intent(this@CameraActivity, VideoPlayActivity::class.java)
+                    Log.d(TAG, "init: ${mFilePath}")
+                    fileList.add(mFilePath)
+                    intent.putExtra("111", fileList)
+                    startActivity(intent)
+                }
+
+                override fun onFail() {
+
+                }
+
+                override fun onProgress(percent: Float) {
+                    Log.d(TAG, "onProgress: ${percent}")
+                }
+
+                override fun onStart() {
+
+                }
+
+            })
+        }
     }
 }
