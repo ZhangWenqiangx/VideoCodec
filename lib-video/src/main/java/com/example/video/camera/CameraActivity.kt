@@ -49,6 +49,10 @@ private val PERMISSIONS_REQUIRED = arrayOf(
 
 /**
  * 录像功能入口 -- 录音+录视频+编解码+合成视频
+ * 压缩方式：
+ * 1、视频录制完成后通过VideoCompress进行压缩（耗时比较长）
+ * 2、通过集成RxFFmpeg getBoxBlur() 方法 进行ffmpeg 命令语句压缩 ，耗时短，安装包会增大
+ * 3、在创建surface 视频录制的时候，对mediacodec 进行音视频编码的调节，水印+压缩同步进行，不做其他任何耗时操作
  */
 class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
     private val TAG = CameraActivity::class.java.simpleName
