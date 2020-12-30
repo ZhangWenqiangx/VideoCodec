@@ -5,6 +5,9 @@ package com.example.video.camera.utils
  *  @date : 2020/12/24
  *  description :
  */
+/**
+ * 寻找字符串集合中最长的字符串
+ */
 fun Array<String>.findMaxLengthStr(): List<String>? {
     var maxLength = Int.MIN_VALUE
     val maxList: MutableList<String> = ArrayList()

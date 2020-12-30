@@ -9,7 +9,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 /**
- * 预览
+ * 包含OpenGl环境的预览页面
  */
 public class EglSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
 

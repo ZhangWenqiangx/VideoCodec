@@ -12,6 +12,9 @@ import android.util.Log
  */
 object BitmapUtils {
 
+    /**
+     * 将字符串绘制为bitmap
+     */
     fun drawText2Bitmap(
         assetManager: AssetManager,
         resources: Resources,
