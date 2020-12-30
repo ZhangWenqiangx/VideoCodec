@@ -160,11 +160,11 @@ class MediaEncodeManager(builder: Builder) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 videoFormat.setInteger(
                     MediaFormat.KEY_PROFILE,
-                    MediaCodecInfo.CodecProfileLevel.AVCProfileHigh
+                    MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline
                 )
                 videoFormat.setInteger(
                     MediaFormat.KEY_LEVEL,
-                    MediaCodecInfo.CodecProfileLevel.AVCLevel31
+                    MediaCodecInfo.CodecProfileLevel.AVCLevel13
                 )
             }
             videoCodec!!.configure(videoFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
