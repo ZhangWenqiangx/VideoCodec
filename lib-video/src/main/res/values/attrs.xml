@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="RoundImageView">
+        <attr name="outer_border_width" format="dimension" /> <!-- 边框宽度 -->
+        <attr name="outer_border_color" format="color" />     <!-- 边框颜色 -->
+        <attr name="corner_angle" format="dimension" />       <!-- 圆角大小 -->
+        <attr name="show_type">                                 <!-- 图片类型 -->
+            <enum name="circle" value="0" />                <!-- 圆形图片 -->
+            <enum name="round" value="1" />                     <!-- 圆角图片-->
+        </attr>
+    </declare-styleable>
+</resources>

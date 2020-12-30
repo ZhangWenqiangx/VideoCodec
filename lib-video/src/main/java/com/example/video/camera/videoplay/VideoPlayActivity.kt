@@ -26,6 +26,10 @@ class VideoPlayActivity : AppCompatActivity() {
     private lateinit var pagerAdapter: ImagePageAdapter
     private var postion =1
 
+    companion object{
+        val EXTRA_DATA = "VIDEO_PATH"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         //设置全屏展示
@@ -39,7 +43,7 @@ class VideoPlayActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.back_button).setOnClickListener { finish() }
         viewPager2 = findViewById(R.id.view_pager)
 
-        val data: ArrayList<String>? = intent.getStringArrayListExtra("111") //此处需一个公共的参数
+        val data: ArrayList<String>? = intent.getStringArrayListExtra(EXTRA_DATA) //此处需一个公共的参数
 
         data?.let {
             //创建一个装有Fragment的容器

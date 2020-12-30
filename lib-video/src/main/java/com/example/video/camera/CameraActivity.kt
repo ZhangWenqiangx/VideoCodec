@@ -1,26 +1,32 @@
 package com.example.video.camera
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.os.Handler
 import android.util.Log
+import android.view.Window
+import android.view.WindowManager
+import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
 import com.example.video.R
 import com.example.video.camera.MediaCodecConstant.MUXER_START
 import com.example.video.camera.MediaCodecConstant.MUXER_STOP
 import com.example.video.camera.codec.MediaEncodeManager
 import com.example.video.camera.codec.MediaMuxerChangeListener
 import com.example.video.camera.codec.VideoEncodeRender
-import com.example.video.camera.compress.VideoCompress
-import com.example.video.camera.compress.ffmpeg.MyRxFFmpegSubscriber
 import com.example.video.camera.record.AudioCapture
 import com.example.video.camera.surface.CameraSurfaceView
 import com.example.video.camera.utils.BitmapUtils
@@ -28,13 +34,11 @@ import com.example.video.camera.utils.ByteUtils
 import com.example.video.camera.utils.DisplayUtils
 import com.example.video.camera.utils.FileUtils
 import com.example.video.camera.videoplay.VideoPlayActivity
-import io.microshow.rxffmpeg.RxFFmpegCommandList
-import io.microshow.rxffmpeg.RxFFmpegInvoke
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
 
-
+const val REQUEST_CODE_CAMERA = 103
 private const val PERMISSIONS_REQUEST_CODE = 10
 
 private val PERMISSIONS_REQUIRED = arrayOf(
@@ -49,8 +53,19 @@ private val PERMISSIONS_REQUIRED = arrayOf(
 class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
     private val TAG = CameraActivity::class.java.simpleName
 
-    private var cameraSurfaceView: CameraSurfaceView? = null
+    /**
+     * 视频路径
+     */
+    val EXTRA_DATA = "VIDEO_PATH"
+    private lateinit var mFilePath: String
+    private var fileList = ArrayList<String>()
+
+    private var timeText: TextView? = null
     private var ivRecord: ImageView? = null
+    private var ivThumbnail: ImageView? = null
+    private var cameraSurfaceView: CameraSurfaceView? = null
+
+    private var timerCount: Long = 10L
 
     //录音
     private var audioCapture: AudioCapture? = null
@@ -59,9 +74,6 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
     //开启 -- 关闭录制
     private var isStartRecord = false
     private val calcDecibel = Handler()
-
-    private lateinit var mFilePath: String
-    private var fileList = ArrayList<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,6 +102,11 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
 
     private fun init() {
         DisplayUtils.adjustBrightness(0.6f, this)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
+        requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.activity_camera)
         ivRecord = findViewById(R.id.capture)
         cameraSurfaceView = findViewById(R.id.camera_surface_view)
@@ -101,13 +118,66 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
                 mFilePath = initMediaCodec()
                 mediaEncodeManager!!.startEncode()
                 audioCapture!!.start()
+                timer.start()
                 isStartRecord = true
             } else {
-                Toast.makeText(this, "end", Toast.LENGTH_SHORT).show()
-                isStartRecord = false
-                mediaEncodeManager!!.stopEncode()
-                audioCapture!!.stop()
+                stopVideoRecord()
             }
+        }
+
+        findViewById<ImageView>(R.id.camera_ok).setOnClickListener {
+            if (fileList.isNotEmpty()) {
+                val data = Intent()
+                data.putStringArrayListExtra(EXTRA_DATA, fileList)
+                setResult(Activity.RESULT_OK, data)
+            }
+            finish()
+        }
+
+        findViewById<ImageButton>(R.id.back_button).setOnClickListener {
+            finish()
+        }
+
+        ivThumbnail = findViewById<ImageView>(R.id.image)
+        ivThumbnail?.setOnClickListener {
+            if (fileList.isEmpty()) {
+                return@setOnClickListener
+            }
+            intent = Intent(this, VideoPlayActivity::class.java)
+            intent.putExtra(VideoPlayActivity.EXTRA_DATA, fileList)
+            startActivity(intent)
+        }
+
+        timeText = findViewById(R.id.timeText)
+    }
+
+    fun stopVideoRecord() {
+        if (timerCount > 5) {
+            Toast.makeText(this, "录制时间太短", Toast.LENGTH_SHORT).show()
+            return
+        }
+        mediaEncodeManager!!.stopEncode()
+        audioCapture!!.stop()
+        timer.cancel()
+        timeText?.text = null
+        Toast.makeText(this, "end", Toast.LENGTH_SHORT).show()
+        isStartRecord = false
+    }
+
+    /**
+     * 视频录制定时器
+     */
+    private val timer = object : CountDownTimer(10000, 1000) {
+        override fun onFinish() {
+            stopVideoRecord()
+        }
+
+        @SuppressLint("SetTextI18n")
+        override fun onTick(millisUntilFinished: Long) {
+            val count: Long = millisUntilFinished / 1000
+            timerCount = count
+            val str = if (count < 10) "0$count" else count.toString()
+            timeText?.text = "00:${str}"
         }
     }
 
@@ -164,20 +234,24 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
         }
     }
 
+    /**
+     * 混流开始结束回调
+     */
     override fun onMediaMuxerChangeListener(type: Int) {
         when (type) {
             MUXER_START -> {
-                Log.d(TAG, "onMediaMuxerChangeListener --- " + "视频录制开始")
+                ivRecord?.setImageResource(R.drawable.camera_stop_icon)
                 setPcmRecordListener()
             }
             MUXER_STOP -> {
-                Log.d(TAG, "onMediaMuxerChangeListener --- " + "视频录制结束")
-
-//                player(true)
-                var myRxFFmpegSubscriber = MyRxFFmpegSubscriber(this)
-                RxFFmpegInvoke.getInstance()
-                    .runCommandRxJava(getBoxBlur())
-                    .subscribe(myRxFFmpegSubscriber)
+                ivRecord?.setImageResource(R.drawable.camera_icon)
+                fileList.add(mFilePath)
+                ivThumbnail?.post {
+                    Glide.with(this)
+                        .load(R.drawable.ic_water_mark)
+                        .override(100, 100)
+                        .into(ivThumbnail!!)
+                }
             }
             else -> {
 
@@ -191,71 +265,5 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
 
     fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-    }
-
-
-    private fun getFilePath(): String {
-        val filePath = FileUtils.getDiskCachePath(this) + "/VID_${SimpleDateFormat(
-            "yyyyMMdd_HHmmss",
-            Locale.CHINA
-        )
-            .format(Date())}.mp4"
-
-        return filePath
-    }
-
-    @Suppress("INACCESSIBLE_TYPE")
-    private fun player(isCompress: Boolean) {
-        if (isCompress) {
-            VideoCompress.compressVideoLow(mFilePath,getFilePath(),object : VideoCompress.CompressListener{
-                override fun onSuccess() {
-                    intent = Intent(this@CameraActivity, VideoPlayActivity::class.java)
-                    Log.d(TAG, "init: ${mFilePath}")
-                    fileList.add(mFilePath)
-                    intent.putExtra("111", fileList)
-                    startActivity(intent)
-                }
-
-                override fun onFail() {
-
-                }
-
-                override fun onProgress(percent: Float) {
-                    Log.d(TAG, "onProgress: ${percent}")
-                }
-
-                override fun onStart() {
-
-                }
-
-            })
-        }
-    }
-
-    private fun ffmpegCompress() {
-        val compressCmd = "ffmpeg -y -i ${mFilePath} -vf boxblur=25:5 -preset superfast ${getFilePath()}"
-
-        var commands = compressCmd.split(" ")
-    }
-
-    private fun getBoxBlur(): Array<String> {
-        var cmdlist = RxFFmpegCommandList()
-        cmdlist.append("-i")
-        cmdlist.append(mFilePath)  // -i ${mFilePath} 读取输入文件url
-        cmdlist.append("-y")  //当已存在输出路径文件，不提示是否覆盖。
-        cmdlist.append("-c:v")
-        cmdlist.append("libx264") // -c:v libx264 设置视频编码器
-        cmdlist.append("-c:a")
-        cmdlist.append("aac") // -c:a aac 设置音频编码器
-        cmdlist.append("-vf")
-        cmdlist.append("scale=-2:640") // -vf scale=-2:640 设置输入视频尺寸
-        cmdlist.append("-preset")
-        cmdlist.append("ultrafast") //-preset ultrafast 配置AVOption转码速率为快速
-        cmdlist.append("-b:v")
-        cmdlist.append("4096k") // -b:v 450k 配置视频码率为450k
-        cmdlist.append("-b:a")
-        cmdlist.append("96k") //-b:a 96k 配置音频码率为96k
-        cmdlist.append(getFilePath()) //读取输入文件路径
-        return cmdlist.build()
     }
 }
