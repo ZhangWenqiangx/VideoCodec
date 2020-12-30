@@ -118,7 +118,7 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
 
         ivRecord!!.setOnClickListener {
             if (!isStartRecord) {
-                Toast.makeText(this, "start", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "录制开始", Toast.LENGTH_SHORT).show()
                 mFilePath = initMediaCodec()
                 mediaEncodeManager!!.startEncode()
                 audioCapture!!.start()
@@ -144,12 +144,17 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
 
         ivThumbnail = findViewById<ImageView>(R.id.image)
         ivThumbnail?.setOnClickListener {
-            if (fileList.isEmpty()) {
-                return@setOnClickListener
+            if (!isStartRecord) {
+                if (fileList.isEmpty()) {
+                    return@setOnClickListener
+                }
+                intent = Intent(this, VideoPlayActivity::class.java)
+                intent.putExtra(VideoPlayActivity.EXTRA_DATA, fileList)
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "视频正在录制中，请录制完后操作", Toast.LENGTH_SHORT).show()
             }
-            intent = Intent(this, VideoPlayActivity::class.java)
-            intent.putExtra(VideoPlayActivity.EXTRA_DATA, fileList)
-            startActivity(intent)
+
         }
 
         timeText = findViewById(R.id.timeText)
@@ -164,7 +169,7 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
         audioCapture!!.stop()
         timer.cancel()
         timeText?.text = null
-        Toast.makeText(this, "end", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "录制结束", Toast.LENGTH_SHORT).show()
         isStartRecord = false
     }
 
@@ -252,7 +257,7 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
                 fileList.add(mFilePath)
                 ivThumbnail?.post {
                     Glide.with(this)
-                        .load(R.drawable.ic_water_mark)
+                        .load(BitmapUtils.getThumbnail(mFilePath))
                         .override(100, 100)
                         .into(ivThumbnail!!)
                 }

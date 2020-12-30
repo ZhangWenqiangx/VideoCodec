@@ -3,6 +3,7 @@ package com.example.video.camera.utils
 import android.content.res.AssetManager
 import android.content.res.Resources
 import android.graphics.*
+import android.media.MediaMetadataRetriever
 import android.util.Log
 
 /**
@@ -51,5 +52,16 @@ object BitmapUtils {
         } catch (e: Exception) {
             null
         }
+    }
+
+    fun getThumbnail(path: String): Bitmap? {
+        val media = MediaMetadataRetriever()
+        media.setDataSource(path)
+
+        var thumbnail = media.getFrameAtTime()
+
+        media.release()
+
+        return thumbnail
     }
 }
