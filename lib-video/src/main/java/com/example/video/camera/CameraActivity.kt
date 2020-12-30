@@ -20,6 +20,7 @@ import com.example.video.camera.codec.MediaEncodeManager
 import com.example.video.camera.codec.MediaMuxerChangeListener
 import com.example.video.camera.codec.VideoEncodeRender
 import com.example.video.camera.compress.VideoCompress
+import com.example.video.camera.compress.ffmpeg.MyRxFFmpegSubscriber
 import com.example.video.camera.record.AudioCapture
 import com.example.video.camera.surface.CameraSurfaceView
 import com.example.video.camera.utils.BitmapUtils
@@ -27,6 +28,8 @@ import com.example.video.camera.utils.ByteUtils
 import com.example.video.camera.utils.DisplayUtils
 import com.example.video.camera.utils.FileUtils
 import com.example.video.camera.videoplay.VideoPlayActivity
+import io.microshow.rxffmpeg.RxFFmpegCommandList
+import io.microshow.rxffmpeg.RxFFmpegInvoke
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -170,7 +173,11 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
             MUXER_STOP -> {
                 Log.d(TAG, "onMediaMuxerChangeListener --- " + "视频录制结束")
 
-                player(true)
+//                player(true)
+                var myRxFFmpegSubscriber = MyRxFFmpegSubscriber(this)
+                RxFFmpegInvoke.getInstance()
+                    .runCommandRxJava(getBoxBlur())
+                    .subscribe(myRxFFmpegSubscriber)
             }
             else -> {
 
@@ -223,5 +230,32 @@ class CameraActivity : AppCompatActivity(), MediaMuxerChangeListener {
 
             })
         }
+    }
+
+    private fun ffmpegCompress() {
+        val compressCmd = "ffmpeg -y -i ${mFilePath} -vf boxblur=25:5 -preset superfast ${getFilePath()}"
+
+        var commands = compressCmd.split(" ")
+    }
+
+    private fun getBoxBlur(): Array<String> {
+        var cmdlist = RxFFmpegCommandList()
+        cmdlist.append("-i")
+        cmdlist.append(mFilePath)  // -i ${mFilePath} 读取输入文件url
+        cmdlist.append("-y")  //当已存在输出路径文件，不提示是否覆盖。
+        cmdlist.append("-c:v")
+        cmdlist.append("libx264") // -c:v libx264 设置视频编码器
+        cmdlist.append("-c:a")
+        cmdlist.append("aac") // -c:a aac 设置音频编码器
+        cmdlist.append("-vf")
+        cmdlist.append("scale=-2:640") // -vf scale=-2:640 设置输入视频尺寸
+        cmdlist.append("-preset")
+        cmdlist.append("ultrafast") //-preset ultrafast 配置AVOption转码速率为快速
+        cmdlist.append("-b:v")
+        cmdlist.append("4096k") // -b:v 450k 配置视频码率为450k
+        cmdlist.append("-b:a")
+        cmdlist.append("96k") //-b:a 96k 配置音频码率为96k
+        cmdlist.append(getFilePath()) //读取输入文件路径
+        return cmdlist.build()
     }
 }
