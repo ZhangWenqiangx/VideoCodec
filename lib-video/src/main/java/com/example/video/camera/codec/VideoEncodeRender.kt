@@ -139,16 +139,13 @@ class VideoEncodeRender(
             context.resources,
             "vertex_shader_screen.glsl",
             "fragment_shader_screen.glsl"
-        )
-
-        if (program > 0) {
+        ).also {
             //获取顶点坐标字段
-            avPosition = GLES32.glGetAttribLocation(program, "av_Position")
+            avPosition = GLES32.glGetAttribLocation(it, "av_Position")
             //获取纹理坐标字段
-            afPosition = GLES32.glGetAttribLocation(program, "af_Position")
+            afPosition = GLES32.glGetAttribLocation(it, "af_Position")
             //创建vbo
             createVBO()
-
             //创建水印纹理
             createWaterTextureId()
         }

@@ -175,6 +175,9 @@ class MediaEncodeManager(builder: Builder) {
         }
     }
 
+    /**
+     * 设置音频原始PCM数据
+     */
     fun setPcmSource(pcmBuffer: ByteArray?, buffSize: Int) {
         if (audioCodec == null) {
             return
